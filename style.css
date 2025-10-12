@@ -1,0 +1,42 @@
+/* 見出しのスタイル */
+h1 {
+  color: navy;
+  font-size: 36px;
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+h2, h3, h4, h5, h6 {
+  color: darkslategray;
+  margin-left: 10px;
+}
+
+/* 段落のスタイル */
+p {
+  font-size: 18px;
+  line-height: 1.6;
+  color: #333;
+  margin: 20px;
+}
+
+/* リンクのスタイル */
+a {
+  color: royalblue;
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+/* 箇条書きのスタイル */
+ul, ol {
+  margin-left: 40px;
+  padding-left: 10px;
+  color: #444;
+  font-size: 16px;
+}
+
+li {
+  margin-bottom: 5px;
+}
