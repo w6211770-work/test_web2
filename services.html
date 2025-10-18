@@ -7,16 +7,7 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <header>
-    <h1>サービス紹介</h1>
-    <nav>
-      <ul>
-        <li><a href="home.html">ホーム</a></li>
-        <li><a href="services.html">サービス</a></li>
-        <li><a href="contact.html">お問い合わせ</a></li>
-      </ul>
-    </nav>
-  </header>
+  <div id="header"></div>
 
   <main>
     <section>
@@ -31,8 +22,17 @@
     </section>
   </main>
 
-  <footer>
-    <p>&copy; 2025 静的サイト株式会社</p>
-  </footer>
+  <div id="footer"></div>
+
+  <script>
+    fetch('header.html')
+      .then(res => res.text())
+      .then(data => document.getElementById('header').innerHTML = data);
+
+    fetch('footer.html')
+      .then(res => res.text())
+      .then(data => document.getElementById('footer').innerHTML = data);
+  </script>
 </body>
 </html>
+
