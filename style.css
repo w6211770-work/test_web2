@@ -49,3 +49,24 @@ footer {
     font-size: 1.5em;
   }
 }
+
+/* FAQページにアコーディオン機能を追加 */
+.faq-item {
+  margin-bottom: 1em;
+}
+.faq-question {
+  background-color: #0077cc;
+  color: white;
+  border: none;
+  padding: 0.8em;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  font-size: 1em;
+}
+
+.faq-answer {
+  display: none;
+  padding: 0.8em;
+  background-color: #f0f0f0;
+}
