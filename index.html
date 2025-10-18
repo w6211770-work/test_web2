@@ -7,17 +7,7 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <header>
-    <h1>ようこそ！静的サイトへ</h1>
-    <nav>
-      <ul>
-        <li><a href="home.html">ホーム</a></li>
-        <li><a href="services.html">サービス</a></li>
-        <li><a href="contact.html">お問い合わせ</a></li>
-      </ul>
-    </nav>
-  </header>
-
+  <div id="header"></div>
   <main>
     <section>
       <h1>見出し1</h1>
@@ -37,10 +27,17 @@
       <li>箇条書き6</li>
     </section>
   </main>
+   <div id="footer"></div>
+  <script>
+    fetch('header.html')
+      .then(res => res.text())
+      .then(data => document.getElementById('header').innerHTML = data);
 
-  <footer>
-    <p>&copy; 2025 静的サイト株式会社</p>
-  </footer>
+    fetch('footer.html')
+      .then(res => res.text())
+      .then(data => document.getElementById('footer').innerHTML = data);
+  </script>
 </body>
 </html>
+
 
