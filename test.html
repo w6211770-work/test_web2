@@ -29,14 +29,14 @@
     <h3>お問い合わせ</h3>
     <p>ご質問はこちらからどうぞ。</p>
   </div>
-
+　
+  <div id="footer"></div>
   <script>
     function showTab(tabId) {
       const tabs = document.querySelectorAll('.tab-content');
       tabs.forEach(tab => tab.classList.remove('active'));
       document.getElementById(tabId).classList.add('active');
     }
-  <div id="footer"></div>
     fetch('header.html')
       .then(res => res.text())
       .then(data => document.getElementById('header').innerHTML = data);
@@ -47,4 +47,5 @@
   </script>
 </body>
 </html>
+
 
