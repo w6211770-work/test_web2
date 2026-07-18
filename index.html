@@ -2,33 +2,33 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>行削除リンク</title>
-  <style>
-    #deleteRow {
-      cursor: pointer;
-      color: red;
-      text-decoration: underline;
-      font-size: 18px;
-    }
-  </style>
+  <title>VBAコード表示</title>
 </head>
 <body>
 
-  <!-- 行削除 -->
-  <span id="deleteRow">行削除</span>
+<pre><code>
+Sub DeleteBlankRowsInColumnA(ByVal ws As Worksheet)
 
-  <script>
-    document.getElementById("deleteRow").addEventListener("click", function () {
-      // ★ここに開きたいページURLを入れる
-      const url = "https://github.com/w6211770-work/test_web2/blob/main/index.html";
+    Dim lastRow As Long
+    Dim i As Long
 
-      // 同じタブで開く
-      window.location.href = url;
+    lastRow = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row
 
-      // 新しいタブで開く場合はこちら
-      // window.open(url, "_blank");
-    });
-  </script>
+    ' 下から上へ削除
+    For i = lastRow To 1 Step -1
+        If Trim(ws.Cells(i, 1).Value) = "" Then
+            ws.Rows(i).Delete
+        End If
+    Next i
+
+End Sub
+</code></pre>
+
+<pre><code>
+Sub aaa(ByVal ws As Worksheet)
+    MsgBox "aaa"
+End Sub
+</code></pre>
 
 </body>
 </html>
