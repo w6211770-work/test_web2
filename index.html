@@ -6,8 +6,10 @@
 </head>
 <body>
 
+<h2>行削除</h2>
 <pre><code>
-Sub DeleteBlankRowsInColumnA(ByVal ws As Worksheet)
+==================================================================
+Sub DeleteRows(ByVal ws As Worksheet,)
 
     Dim lastRow As Long
     Dim i As Long
@@ -22,13 +24,64 @@ Sub DeleteBlankRowsInColumnA(ByVal ws As Worksheet)
     Next i
 
 End Sub
+==================================================================
 </code></pre>
 
+<h2>メッセージ表示</h2>
 <pre><code>
+==================================================================
 Sub aaa(ByVal ws As Worksheet)
     MsgBox "aaa"
 End Sub
+==================================================================
+</code></pre>
+
+
+<h2>閉じていないブックを閉じる</h2>
+<pre><code>
+==================================================================
+If Not wb Is Nothing Then
+    On Error Resume Next
+    wb.Close SaveChanges:=False
+
+    ' 参照を確実に消す
+    Set wb = Nothing
+    On Error GoTo 0
+End If
+==================================================================
 </code></pre>
 
 </body>
 </html>
+
+<h2>問題ありなしを調べてTrueFalseをかえすが、ByRefでメッセージを変える</h2>
+<pre><code>
+==================================================================
+Function 時間問題あり(ByRef msg As String) As Boolean
+    msg = ""                ' メッセージ初期化
+    時間問題あり = False   ' 初期値
+
+    If Now > TimeValue("15:00:00") Then
+        msg = msg & "15時以降です。" & vbCrLf
+    End If
+
+    If Now < TimeValue("20:00:00") Then
+        msg = msg & "20時以前です。" & vbCrLf
+    End If
+
+    If msg <> "" Then
+        時間問題あり = True
+    End If
+End Function
+
+
+Sub 実行()
+    Dim message As String
+
+    If 時間問題あり(message) Then
+        MsgBox message & vbCrLf & "時間問題ありです。処理を終了します。"
+        Exit Sub
+    End If
+End Sub
+==================================================================
+</code></pre>
