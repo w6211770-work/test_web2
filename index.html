@@ -2,42 +2,33 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>VBAのSub・Function</title>
-  <link rel="stylesheet" href="style.css">
+  <title>行削除リンク</title>
+  <style>
+    #deleteRow {
+      cursor: pointer;
+      color: red;
+      text-decoration: underline;
+      font-size: 18px;
+    }
+  </style>
 </head>
 <body>
-  <div id="header"></div>
-  <main>
-    <section>
-      <h1>あああ</h1>
-      <h2>このサイトについて</h2>
-      <p>これはHTMLとCSSだけで作られた静的なウェブページです。</p>
-      <h3>見出し3</h3>
-      <h4>見出し4</h4>
-      <h5>見出し5</h5>
-      <h6>見出し6</h6>
-      <p>これは段落です。</p>
-      <a href="https://example.com">リンク</a>
-      <ul>箇条書き1</ul>
-      <ul>箇条書き2</ul>
-      <ol>箇条書き3</ol>
-      <ol>箇条書き4</ol>
-      <li>箇条書き5</li>
-      <li>箇条書き6</li>
-    </section>
-  </main>
-   <div id="footer"></div>
-  <script>
-    fetch('header.html')
-      .then(res => res.text())
-      .then(data => document.getElementById('header').innerHTML = data);
 
-    fetch('footer.html')
-      .then(res => res.text())
-      .then(data => document.getElementById('footer').innerHTML = data);
+  <!-- 行削除 -->
+  <span id="deleteRow">行削除</span>
+
+  <script>
+    document.getElementById("deleteRow").addEventListener("click", function () {
+      // ★ここに開きたいページURLを入れる
+      const url = "https://example.com/delete-page";
+
+      // 同じタブで開く
+      window.location.href = url;
+
+      // 新しいタブで開く場合はこちら
+      // window.open(url, "_blank");
+    });
   </script>
+
 </body>
 </html>
-
-
