@@ -6,38 +6,51 @@
 </head>
 <body>
 
-<h2>行削除</h2>
+<h4>行を削除して削除した行数を返す</h4>
 <pre><code>
 ==================================================================
-Sub DeleteRows(ByVal ws As Worksheet,)
-
-    Dim lastRow As Long
+Private Function DeleteRowsByValue(ByVal ws As Worksheet, ByVal target As String, ByVal column As Long) As Long
+    'column列の値がtargetの行を削除する
+    '削除した行数を返す
+    Dim v As Variant
     Dim i As Long
+    Dim lastRow As Long
+    Dim deleteRowRng As Range
 
     lastRow = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row
+    v = ws.Range(ws.Cells(1, column), ws.Cells(lastRow, column)).value
 
-    ' 下から上へ削除
-    For i = lastRow To 1 Step -1
-        If Trim(ws.Cells(i, 1).Value) = "" Then
-            ws.Rows(i).Delete
+    For i = 1 To lastRow
+        If v(i, 1) = target Then
+            If deleteRowRng Is Nothing Then
+                Set deleteRowRng = ws.Rows(i)
+            Else
+                Set deleteRowRng = Union(deleteRowRng, ws.Rows(i))
+            End If
         End If
     Next i
 
-End Sub
+    If Not deleteRowRng Is Nothing Then
+        DeleteRowsByValue = deleteRowRng.Rows.Count
+        deleteRowRng.Delete
+    Else
+        DeleteRowsByValue = 0
+    End If
+End Function
 ==================================================================
 </code></pre>
 
-<h2>メッセージ表示</h2>
+<h4>メッセージ表示</h4>
 <pre><code>
 ==================================================================
-Sub aaa(ByVal ws As Worksheet)
+Private Sub aaa(ByVal ws As Worksheet)
     MsgBox "aaa"
 End Sub
 ==================================================================
 </code></pre>
 
 
-<h2>閉じていないブックを閉じる</h2>
+<h4>開いているブックを閉じる</h4>
 <pre><code>
 ==================================================================
 If Not wb Is Nothing Then
@@ -51,13 +64,11 @@ End If
 ==================================================================
 </code></pre>
 
-</body>
-</html>
 
-<h2>問題ありなしを調べてTrueFalseをかえすが、ByRefでメッセージを変える</h2>
+<h4>問題ありなしを調べてTrueFalseをかえすが、ByRefでメッセージを変える</h4>
 <pre><code>
 ==================================================================
-Function 時間問題あり(ByRef msg As String) As Boolean
+Private Function 時間問題あり(ByRef msg As String) As Boolean
     msg = ""                ' メッセージ初期化
     時間問題あり = False   ' 初期値
 
@@ -85,3 +96,107 @@ Sub 実行()
 End Sub
 ==================================================================
 </code></pre>
+
+
+<h4>コレクションを配列に変換する</h4>
+<pre><code>
+==================================================================
+Private Function CollectionToArray(ByVal collection As collection, ByVal startIndex As Long) As Variant()
+    'コレクションを配列に変換する
+    Dim arr() As Variant
+    Dim i As Long
+
+    ' 配列を開始番号に合わせて確保
+    ReDim arr(startIndex To startIndex + collection.Count - 1)
+
+    ' Collection → 配列へコピー
+    For i = 1 To collection.Count
+        arr(startIndex + i - 1) = collection.Item(i)
+    Next i
+
+    CollectionToArray = arr
+End Function
+==================================================================
+</code></pre>
+
+<h4>ブックを開いているか調べる</h4>
+<pre><code>
+==================================================================
+Private Function IsWorkbookLocked(ByVal filePath As String) As Boolean
+    'ブックが開ひらかれているか調べる
+    Dim fileNum As Integer
+
+    On Error GoTo Locked
+
+    fileNum = FreeFile
+
+    ' 追記モード（書き込みロック）で開けるか試す
+    Open filePath For Binary Access Write Lock Read Write As #fileNum
+
+    ' 開けた → ロックされていない
+    Close #fileNum
+    IsWorkbookLocked = False
+    Exit Function
+
+Locked:
+    ' 開けない → 誰かが開いている（編集中）
+    IsWorkbookLocked = True
+End Function
+==================================================================
+</code></pre>
+
+<h4>最終行を取得</h4>
+<pre><code>
+==================================================================
+Private Function GetLastRow(ByVal ws As Worksheet) As Long
+    '最終行を取得
+    Dim lastRow As Long
+    Dim col_i As Long
+    Dim r As Long
+
+    lastRow = 0
+
+    ' 実務で使う範囲だけ（1～100列）
+    For col_i = 1 To 100
+        r = ws.Cells(ws.Rows.Count, col_i).End(xlUp).Row
+        If r > lastRow Then lastRow = r
+    Next col_i
+
+    GetLastRow = lastRow
+End Function
+==================================================================
+</code></pre>
+
+<h4>重複があるか</h4>
+<pre><code>
+==================================================================
+Private Function HasDuplicate(ByVal ws As Worksheet, ByVal checkColumn As Integer) As Boolean
+    '重複があるか調べる
+    Dim dic As Object
+    Dim v As Variant
+    Dim i As Long
+    Dim lastRow As Long
+    
+    HasDuplicate = False
+
+    Set dic = CreateObject("Scripting.Dictionary")
+    
+    lastRow = ws.Cells(ws.Rows.Count, checkColumn).End(xlUp).Row
+    v = ws.Range(ws.Cells(1, checkColumn), ws.Cells(lastRow, checkColumn)).value
+
+    For i = 1 To UBound(v)
+        If dic.Exists(v(i, 1)) Then
+            HasDuplicate = True
+            Exit Function
+        Else
+            dic.Add v(i, 1), i
+        End If
+    Next i
+    
+End Function
+==================================================================
+</code></pre>
+</body>
+</html>
+
+
