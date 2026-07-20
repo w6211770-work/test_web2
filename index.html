@@ -196,6 +196,43 @@ Private Function HasDuplicate(ByVal ws As Worksheet, ByVal checkColumn As Intege
 End Function
 ==================================================================
 </code></pre>
+
+<h4>３列を結合した値に重複があるか</h4>
+<pre><code>
+==================================================================
+Private Function HasDuplicate(ByVal ws As Worksheet, ByVal checkColumn1 As Integer, ByVal checkColumn2 As Integer, ByVal checkColumn3 As Integer) As Boolean
+    '重複があるか調べる
+    Dim dic As Object
+    Dim v As Variant
+    Dim i As Long
+    Dim lastRow As Long
+    Dim maxColumn As Long
+    Dim minColumn As Long
+    Dim key As String
+    
+    HasDuplicate = False
+
+    Set dic = CreateObject("Scripting.Dictionary")
+    
+    lastRow = ws.Cells(ws.Rows.Count, checkColumn1).End(xlUp).Row
+    maxColumn = WorksheetFunction.Max(checkColumn1, checkColumn2, checkColumn3)
+    minColumn = WorksheetFunction.Min(checkColumn1, checkColumn2, checkColumn3)
+    
+    v = ws.Range(ws.Cells(1, minColumn), ws.Cells(lastRow, maxColumn)).value
+
+    For i = 1 To UBound(v)
+        key = CStr(v(i, checkColumn1)) & "|" & CStr(v(i, checkColumn2)) & "|" & CStr(v(i, checkColumn3))
+        If dic.Exists(key) Then
+            HasDuplicate = True
+            Exit Function
+        Else
+            dic.Add key, i
+        End If
+    Next i
+    
+End Function
+==================================================================
+</code></pre>
 </body>
 </html>
 
