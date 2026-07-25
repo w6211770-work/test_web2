@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="google-site-verification" content="NDruP4quhsgKEZOlA5ozHhUY4zP8Adntrtye9_r2QU8">
-  <title>Excel VBAコード集｜実務で使えるサンプルと解説</title>
-  <meta name="description" content="Excel VBAの実務で使えるコードをまとめています。行削除、メッセージ表示、ファイル操作、正規表現、日付処理など、初心者から中級者まで役立つサンプルコードを掲載しています。">
+  <title>Excel VBAコード集｜実務で使えるサンプル</title>
+  <meta name="description" content="Excel VBAの実務で使えるコードのサンプルを掲載しています。">
 </head>
   
 <body>
@@ -12,9 +12,15 @@
 <h1>Excel VBAコード集（実務向け）</h1>
 <p>
 このページでは、Excel VBAの実務で役立つコードを掲載しています。  
+コードの使用に際して損害が発生しても一切責任は負いません。
 </p>
-  
-<h4>行を削除して削除した行数を返す</h4>
+
+<!--
+ (=^・^=)
+-->
+
+
+<h4>targetの値の行を削除して削除した行数を返す</h4>
 <pre><code>
 ==================================================================
 Private Function DeleteRowsByValue(ByVal ws As Worksheet, ByVal target As String, ByVal column As Long) As Long
@@ -48,12 +54,53 @@ End Function
 ==================================================================
 </code></pre>
 
-<h4>メッセージ表示</h4>
+<h4>keepValue以外の値の行を削除して削除した行数を返す</h4>
 <pre><code>
 ==================================================================
-Private Sub aaa(ByVal ws As Worksheet)
-    MsgBox "aaa"
-End Sub
+Private Function DeleteRowsExceptValue(ByVal ws As Worksheet, ByVal keepValue As String, ByVal columnIndex As Long) As Long
+    'columnIndex 列の値が keepValue 以外の行を削除する
+    '削除した行数を返す
+    
+    Dim v As Variant
+    Dim i As Long
+    Dim lastRow As Long
+    Dim deleteRowRng As Range
+
+    lastRow = ws.Cells(ws.Rows.Count, columnIndex).End(xlUp).Row
+
+    ' 対象列を配列化（高速）
+    v = ws.Range(ws.Cells(1, columnIndex), ws.Cells(lastRow, columnIndex)).value
+
+    ' keepValue 以外の行を削除対象に追加
+    For i = 1 To lastRow
+        If v(i, 1) <> keepValue Then
+            If deleteRowRng Is Nothing Then
+                Set deleteRowRng = ws.Rows(i)
+            Else
+                Set deleteRowRng = Union(deleteRowRng, ws.Rows(i))
+            End If
+        End If
+    Next i
+
+    ' 削除実行
+    If Not deleteRowRng Is Nothing Then
+        DeleteRowsExceptValue = deleteRowRng.Rows.Count
+        deleteRowRng.Delete
+    Else
+        DeleteRowsExceptValue = 0
+    End If
+End Function
+==================================================================
+</code></pre>
+
+<h4>デフォルトボタン指定メッセージ表示</h4>
+<pre><code>
+==================================================================
+    If MsgBox("本当に削除しますか？", vbYesNo + vbQuestion + vbDefaultButton2, "確認") = vbYes Then
+    	MsgBox "削除しました"
+　　Else
+    	MsgBox "キャンセルしました"
+　　End If
 ==================================================================
 </code></pre>
 
@@ -73,12 +120,12 @@ End If
 </code></pre>
 
 
-<h4>問題ありなしを調べてTrueFalseをかえすが、ByRefでメッセージを変える</h4>
+<h4>問題ありなしを調べてTrueFalseを返すが、ByRefでメッセージを変える</h4>
 <pre><code>
 ==================================================================
-Private Function 時間問題あり(ByRef msg As String) As Boolean
-    msg = ""                ' メッセージ初期化
-    時間問題あり = False   ' 初期値
+Private Function HasTimeProblem(ByRef msg As String) As Boolean
+    msg = ""                    ' メッセージ初期化
+    HasTimeProblem = False      ' 初期値
 
     If Now > TimeValue("15:00:00") Then
         msg = msg & "15時以降です。" & vbCrLf
@@ -89,16 +136,16 @@ Private Function 時間問題あり(ByRef msg As String) As Boolean
     End If
 
     If msg <> "" Then
-        時間問題あり = True
+        HasTimeProblem = True
     End If
 End Function
 
 
-Sub 実行()
+Sub ExecuteProcess()
     Dim message As String
 
-    If 時間問題あり(message) Then
-        MsgBox message & vbCrLf & "時間問題ありです。処理を終了します。"
+    If HasTimeProblem(message) Then
+        MsgBox message & vbCrLf & "時間の問題があります。処理を終了します。"
         Exit Sub
     End If
 End Sub
@@ -205,7 +252,7 @@ End Function
 ==================================================================
 </code></pre>
 
-<h4>３列を結合した値に重複があるか</h4>
+<h4>３列すべての値が重複しているか</h4>
 <pre><code>
 ==================================================================
 Private Function HasDuplicate(ByVal ws As Worksheet, ByVal checkColumn1 As Integer, ByVal checkColumn2 As Integer, ByVal checkColumn3 As Integer) As Boolean
@@ -241,7 +288,291 @@ Private Function HasDuplicate(ByVal ws As Worksheet, ByVal checkColumn1 As Integ
 End Function
 ==================================================================
 </code></pre>
+
+<h4>ファイル名を変更する</h4>
+<pre><code>
+==================================================================
+Private Function RenameFile(ByVal folderPath As String, ByVal oldName As String, ByVal newName As String) As Boolean
+    'ファイル名を変更する
+    
+    Dim oldPath As String
+    Dim newPath As String
+    
+    RenameFile = False  '失敗を初期値にする
+    
+    ' フルパスを作成
+    oldPath = folderPath & "\" & oldName
+    newPath = folderPath & "\" & newName
+    
+    ' 元ファイルが存在するか確認
+    If Dir(oldPath) = "" Then
+        Exit Function   '存在しない → False のまま終了
+    End If
+    
+    ' 変更後ファイル名が既に存在する場合は失敗扱い
+    If Dir(newPath) <> "" Then
+        Exit Function
+    End If
+    
+    ' ファイル名変更
+    Name oldPath As newPath
+    
+    RenameFile = True   '成功
+End Function
+==================================================================
+</code></pre>
+
+<h4>Midでエラーが出ないようにする</h4>
+<pre><code>
+==================================================================
+Private Function SafeMid(ByVal txt As Variant, _
+                        ByVal startPos As Long, _
+                        ByVal length As Long) As String
+    ' WorksheetFunction.Mid の代わりに使う安全版
+    
+    ' 空・Null・非文字列なら空文字を返す
+    If IsNull(txt) Or IsEmpty(txt) Then
+        SafeMid = ""
+        Exit Function
+    End If
+    
+    Dim s As String
+    s = CStr(txt)
+    
+    ' 開始位置が不正なら空文字
+    If startPos < 1 Or startPos > Len(s) Then
+        SafeMid = ""
+        Exit Function
+    End If
+    
+    ' 長さが不正なら空文字
+    If length < 1 Then
+        SafeMid = ""
+        Exit Function
+    End If
+    
+    ' 安全に Mid を返す
+    SafeMid = Mid$(s, startPos, length)
+End Function
+==================================================================
+</code></pre>
+
+<h4>配列Aの中から配列Bの値を除いて配列を返す</h4>
+<pre><code>
+==================================================================
+Private Function ExcludeSet(ByVal setA As Variant, ByVal setB As Variant) As Variant
+    '1次元配列の配列setAの中から、1次元配列の配列setBに含まれる値を除外する
+    'Rangeで取得した配列は１行でも２次元配列になるためこの関数は使えない
+    '例
+    'A = Array("A", "B", "C", "D", "E")
+    'B = Array("B", "D")
+    'C = ExcludeSet(A, B)
+    'for文で出力すると,A,C,Eが出力される
+    
+    Dim dic As Object
+    Dim result() As Variant
+    Dim i As Long, cnt As Long
+    
+    Set dic = CreateObject("Scripting.Dictionary")
+    
+    ' --- 集合BをDictionaryに登録（高速検索用） ---
+    For i = LBound(setB) To UBound(setB)
+        If Not dic.Exists(CStr(setB(i))) Then
+            dic.Add CStr(setB(i)), True
+        End If
+    Next i
+    
+    ' --- 結果配列を作成 ---
+    ReDim result(0 To UBound(setA))
+    cnt = 0
+    
+    ' --- 集合Aの値を走査し、集合Bにないものだけ追加 ---
+    For i = LBound(setA) To UBound(setA)
+        If Not dic.Exists(CStr(setA(i))) Then
+            result(cnt) = setA(i)
+            cnt = cnt + 1
+        End If
+    Next i
+    
+    ' --- 実際の件数に合わせて配列を縮める ---
+    ReDim Preserve result(0 To cnt - 1)
+    
+    ExcludeSet = result
+End Function
+==================================================================
+</code></pre>
+
+<h4>RangeAの中からRangeBの値を除いて配列を返す</h4>
+<pre><code>
+==================================================================
+Private Function ExcludeRange(ByVal rngA As Range, ByVal rngB As Range) As Variant
+    '1列の2次元配列の配列setAの中から、1列の2次元配列の配列setBに含まれる値を除外する
+    'Rangeで取得した配列しか使えない
+    '例
+    'set A = ws.Range("A1:A10")
+    'set B = ws.Range("B1:B10")
+    'C = ExcludeRange(A, B)
+
+    Dim dic As Object
+    Dim arrA As Variant, arrB As Variant
+    Dim result() As Variant
+    Dim i As Long, cnt As Long
+    Dim rowsA As Long, rowsB As Long
+    
+    Set dic = CreateObject("Scripting.Dictionary")
+    
+    rowsA = rngA.Rows.Count
+    rowsB = rngB.Rows.Count
+    
+    arrA = rngA.value
+    arrB = rngB.value
+    
+    ' 集合BをDictionaryに登録
+    For i = 1 To rowsB
+        If Not dic.Exists(CStr(arrB(i, 1))) Then
+            dic.Add CStr(arrB(i, 1)), True
+        End If
+    Next i
+    
+    ' 結果配列（1次元）を最大サイズで確保
+    ReDim result(1 To rowsA)
+    cnt = 0
+    
+    ' 集合Aの値を走査し、集合Bにないものだけ追加
+    For i = 1 To rowsA
+        If Not dic.Exists(CStr(arrA(i, 1))) Then
+            cnt = cnt + 1
+            result(cnt) = arrA(i, 1)
+        End If
+    Next i
+    
+    ' 実際の件数に合わせて縮める
+    If cnt = 0 Then
+        ExcludeRange = Array()   '空集合
+    Else
+        ReDim Preserve result(1 To cnt)
+        ExcludeRange = result
+    End If
+End Function
+==================================================================
+</code></pre>
+
+<h4>配列Aの中に含まれる値かつ、配列Bの値に含まれる値を、重複を除いて、配列で返す</h4>
+<pre><code>
+==================================================================
+Private Function IntersectArrayUnique(ByVal arrA As Variant, ByVal arrB As Variant) As Variant
+    '1次元配列の配列arrAの中に含まれる値かつ、1次元配列の配列arrBにも含まれる値を取得する
+    'AかつBの同じ値が複数ある場合は一つのみ取得する
+    'Rangeで取得した配列は１行でも２次元配列になるためこの関数は使えない
+    '例
+    'A = Array("A", "B", "C", "D", "E", "D")
+    'B = Array("B", "D")
+    'C = IntersectRangeUnique(A, B)
+    'for文で出力すると,B,Dが出力される
+    
+    Dim dicB As Object
+    Dim dicResult As Object
+    Dim result() As Variant
+    Dim i As Long, cnt As Long
+    
+    Set dicB = CreateObject("Scripting.Dictionary")
+    Set dicResult = CreateObject("Scripting.Dictionary")
+    
+    ' --- 集合BをDictionaryに登録（重複除去） ---
+    For i = LBound(arrB) To UBound(arrB)
+        dicB(CStr(arrB(i))) = True
+    Next i
+    
+    ' --- 結果配列（最大サイズで確保） ---
+    ReDim result(LBound(arrA) To UBound(arrA))
+    cnt = LBound(arrA)
+    
+    ' --- 集合Aの値が集合Bに存在し、かつ重複していない場合だけ追加 ---
+    For i = LBound(arrA) To UBound(arrA)
+        Dim key As String
+        key = CStr(arrA(i))
+        
+        If dicB.Exists(key) Then
+            If Not dicResult.Exists(key) Then
+                result(cnt) = key
+                dicResult.Add key, True
+                cnt = cnt + 1
+            End If
+        End If
+    Next i
+    
+    ' --- 実際の件数に合わせて縮める ---
+    If dicResult.Count = 0 Then
+        IntersectArrayUnique = Array()   '空集合
+    Else
+        ReDim Preserve result(LBound(arrA) To cnt - 1)
+        IntersectArrayUnique = result
+    End If
+End Function
+==================================================================
+</code></pre>
+
+
+<h4>RangeAの中に含まれる値かつ、RangeBの値に含まれる値を、重複を除いて、配列で返す</h4>
+<pre><code>
+==================================================================
+Private Function IntersectRangeUnique(ByVal rngA As Range, ByVal rngB As Range) As Variant
+    '1列の2次元配列の配列setAの中に含まれる値かつ、1列の2次元配列の配列setBに含まれる値を取得する
+    'AかつBの値が複数ある場合は一つのみ取得する
+    'Rangeで取得した配列しか使えない
+    '例
+    'set A = ws.Range("A1:A10")
+    'set B = ws.Range("B1:B10")
+    'C = IntersectRangeUnique(A, B)
+    Dim dicB As Object        '集合B用
+    Dim dicResult As Object   '結果の重複除去用
+    Dim arrA As Variant, arrB As Variant
+    Dim result() As Variant
+    Dim i As Long, cnt As Long
+    Dim rowsA As Long, rowsB As Long
+    
+    Set dicB = CreateObject("Scripting.Dictionary")
+    Set dicResult = CreateObject("Scripting.Dictionary")
+    
+    rowsA = rngA.Rows.Count
+    rowsB = rngB.Rows.Count
+    
+    arrA = rngA.value
+    arrB = rngB.value
+    
+    ' --- 集合BをDictionaryに登録 ---
+    For i = 1 To rowsB
+        dicB(CStr(arrB(i, 1))) = True
+    Next i
+    
+    ' --- 結果配列（最大サイズで確保） ---
+    ReDim result(1 To rowsA)
+    cnt = 0
+    
+    ' --- 集合Aの値が集合Bに存在し、かつ重複していない場合だけ追加 ---
+    For i = 1 To rowsA
+        Dim key As String
+        key = CStr(arrA(i, 1))
+        
+        If dicB.Exists(key) Then
+            If Not dicResult.Exists(key) Then
+                cnt = cnt + 1
+                result(cnt) = key
+                dicResult.Add key, True   '重複登録防止
+            End If
+        End If
+    Next i
+    
+    ' --- 実際の件数に合わせて縮める ---
+    If cnt = 0 Then
+        IntersectRangeUnique = Array()   '空集合
+    Else
+        ReDim Preserve result(1 To cnt)
+        IntersectRangeUnique = result
+    End If
+End Function
+==================================================================
+</code></pre>
 </body>
 </html>
-
 
