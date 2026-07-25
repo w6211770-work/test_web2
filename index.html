@@ -222,6 +222,28 @@ End Function
 ==================================================================
 </code></pre>
 
+<h4>最終列を取得</h4>
+<pre><code>
+==================================================================
+Private Function GetLastColumn(ByVal ws As Worksheet) As Long
+    '最終列を取得
+    Dim lastCol As Long
+    Dim row_i As Long
+    Dim c As Long
+
+    lastCol = 0
+
+    ' 実務で使う範囲だけ（1～100行など）
+    For row_i = 1 To 100
+        c = ws.Cells(row_i, ws.Columns.Count).End(xlToLeft).Column
+        If c > lastCol Then lastCol = c
+    Next row_i
+
+    GetLastColumn = lastCol
+End Function
+==================================================================
+</code></pre>
+
 <h4>重複があるか</h4>
 <pre><code>
 ==================================================================
@@ -573,6 +595,351 @@ Private Function IntersectRangeUnique(ByVal rngA As Range, ByVal rngB As Range) 
 End Function
 ==================================================================
 </code></pre>
+
+<h4>事前チェックをまとめる</h4>
+<pre><code>
+==================================================================
+Private Function CheckBeforeProcess(ByVal wb As Workbook, ByRef msg As String) As Boolean
+    msg = ""
+
+    If IsWorkbookLocked(wb) Then
+        msg = msg & "ブックが誰かに開かれています。" & vbCrLf
+    End If
+
+    ' ここにチェックをいくらでも追加できる
+'    If IsSheetNameInvalid(wb) Then
+'        msg = msg & "シート名が不正です。" & vbCrLf
+'    End If
+'
+'    If IsDataRangeInvalid(wb) Then
+'        msg = msg & "データ範囲が不正です。" & vbCrLf
+'    End If
+
+    ' If IsSomethingWrong(wb) Then msg = msg & "～～が不正です" & vbCrLf
+
+    CheckBeforeProcess = (msg <> "")
+End Function
+
+Sub ExecuteProcess()
+
+    Dim message As String
+
+    If CheckBeforeProcess(wb, message) Then
+        MsgBox message & vbCrLf & "事前チェックで問題が見つかりました。処理を終了します。"
+        Exit Sub
+    End If
+
+    ' ---- 転記処理 ----
+'    Call CopyData
+
+End Sub
+==================================================================
+</code></pre>
+
+<h4>辞書で値があるか調べる</h4>
+<pre><code>
+==================================================================
+Private Function RangeContainsValue(ByVal rng As Range, ByVal target As String) As Boolean
+    'Range の値を辞書に入れて、引数の値があるか調べる
+    Dim dic As Object
+    Dim arr As Variant
+    Dim i As Long
+    
+    Set dic = CreateObject("Scripting.Dictionary")
+    
+    arr = rng.value
+    
+    For i = 1 To UBound(arr, 1)
+        dic(CStr(arr(i, 1))) = True
+    Next i
+    
+    RangeContainsValue = dic.Exists(target)
+End Function
+==================================================================
+</code></pre>
+
+<h4>targetが存在する位置を取得する線形探索</h4>
+<pre><code>
+==================================================================
+Private Function LinearSearch(ByVal arr As Variant, ByVal target As Variant) As Long
+    'targetが存在する位置を取得する
+    Dim i As Long
+    For i = LBound(arr, 1) To UBound(arr, 1)
+        If arr(i, 1) = target Then
+            LinearSearch = i
+            Exit Function
+        End If
+    Next i
+    LinearSearch = -1
+End Function
+
+Sub aaa()
+    Dim v As Variant
+    v = Sheet1.Range(Sheet1.Cells(1, 1), Sheet1.Cells(100, 1)).value
+    Debug.Print LinearSearch(v, "abc")
+End Sub
+==================================================================
+</code></pre>
+
+<h4>シートをソートする</h4>
+<pre><code>
+==================================================================
+Private Sub sortRange(ByVal ws As Worksheet, ByVal sortColumn As Long, ByVal sortOrder As XlSortOrder)
+    '引数のシートの引数の列を引数の順にソート
+    '降順xlDescending
+    '昇順xlAscending
+    Dim lastRow As Long
+    Dim lastCol As Long
+    Dim sortRange As Range
+
+    '--- 実データの最終行・最終列を取得 ---
+    lastRow = ws.Cells(ws.Rows.Count, sortColumn).End(xlUp).Row
+    lastCol = ws.Cells(1, ws.Columns.Count).End(xlToLeft).column
+
+    '--- ソート範囲を決定（A1 から最終行・最終列）---
+    Set sortRange = ws.Range(ws.Cells(1, 1), ws.Cells(lastRow, lastCol))
+
+    '--- ソート実行 ---
+    ws.Sort.SortFields.Clear
+    ws.Sort.SortFields.Add key:=ws.Columns(sortColumn), Order:=sortOrder
+
+    With ws.Sort
+        .SetRange sortRange
+        .Header = xlYes
+        .Apply
+    End With
+End Sub
+
+Sub aaab()
+    sortRange Worksheets("Sheet1"), 3, xlAscending '3列目を基準に昇順ソート
+End Sub
+==================================================================
+</code></pre>
+
+<h4>QuickSort（高速ソート・1次元配列専用）昇順に並べる</h4>
+<pre><code>
+==================================================================
+Private Sub QuickSort(ByRef arr As Variant, ByVal first As Long, ByVal last As Long)
+    'QuickSort（高速ソート・1次元配列専用）昇順に並べる
+    Dim i As Long, j As Long
+    Dim pivot As Variant, tmp As Variant
+
+    i = first
+    j = last
+    pivot = arr((first + last) \ 2)
+
+    Do While i <= j
+        Do While arr(i) < pivot
+            i = i + 1
+        Loop
+
+        Do While arr(j) > pivot
+            j = j - 1
+        Loop
+
+        If i <= j Then
+            tmp = arr(i)
+            arr(i) = arr(j)
+            arr(j) = tmp
+            i = i + 1
+            j = j - 1
+        End If
+    Loop
+
+    If first < j Then QuickSort arr, first, j
+    If i < last Then QuickSort arr, i, last
+End Sub
+
+Sub aaa()
+    Dim A As Variant
+    A = Array(8, 3, 5, 1, 9, 4)
+    
+    QuickSort A, LBound(A), UBound(A)
+
+End Sub
+==================================================================
+</code></pre>
+
+<h4>QuickSort（高速ソート・1次元配列専用）降順に並べる</h4>
+<pre><code>
+==================================================================
+Private Sub QuickSortDesc(ByRef arr As Variant, ByVal first As Long, ByVal last As Long)
+    'QuickSort（高速ソート・1次元配列専用）降順に並べる
+    Dim i As Long, j As Long
+    Dim pivot As Variant, tmp As Variant
+
+    i = first
+    j = last
+    pivot = arr((first + last) \ 2)
+
+    Do While i <= j
+        ' 昇順 arr(i) < pivot → 降順 arr(i) > pivot
+        Do While arr(i) > pivot
+            i = i + 1
+        Loop
+
+        ' 昇順 arr(j) > pivot → 降順 arr(j) < pivot
+        Do While arr(j) < pivot
+            j = j - 1
+        Loop
+
+        If i <= j Then
+            tmp = arr(i)
+            arr(i) = arr(j)
+            arr(j) = tmp
+            i = i + 1
+            j = j - 1
+        End If
+    Loop
+
+    If first < j Then QuickSortDesc arr, first, j
+    If i < last Then QuickSortDesc arr, i, last
+End Sub
+
+Sub aaab()
+    Dim A As Variant
+    A = Array(8, 3, 5, 1, 9, 4)
+    
+    QuickSortDesc A, LBound(A), UBound(A)
+
+End Sub
+==================================================================
+</code></pre>
+
+<h4>1列の二次元配列 arr(row,1) を一次元配列 arr(row) に変換する</h4>
+<pre><code>
+==================================================================
+Private Function To1D(ByVal arr2D As Variant) As Variant
+    '1列の二次元配列 arr(row,1) を一次元配列 arr(row) に変換する
+    Dim result() As Variant
+    Dim i As Long
+    Dim lastRow As Long
+
+    lastRow = UBound(arr2D, 1)
+
+    ReDim result(1 To lastRow)
+
+    For i = 1 To lastRow
+        result(i) = arr2D(i, 1)
+    Next i
+
+    To1D = result
+End Function
+
+Sub TestTo1D()
+    Dim v As Variant
+    Dim a As Variant
+
+    'Range → 二次元配列
+    v = Range("A1:A6").value
+
+    '一次元配列に変換
+    a = To1D(v)
+
+    Dim i As Long
+    For i = LBound(a) To UBound(a)
+        Debug.Print a(i)
+    Next i
+End Sub
+==================================================================
+</code></pre>
+
+<h4>一次元配列 arr(i) を二次元配列 arr(i,1) に変換する</h4>
+<pre><code>
+==================================================================
+Private Function To2D(ByVal arr1D As Variant) As Variant
+    '一次元配列 arr(i) を二次元配列 arr(i,1) に変換する
+    Dim result() As Variant
+    Dim i As Long
+    Dim lastRow As Long
+
+    lastRow = UBound(arr1D)
+
+    ReDim result(1 To lastRow, 1 To 1)
+
+    For i = 1 To lastRow
+        result(i, 1) = arr1D(i)
+    Next i
+
+    To2D = result
+End Function
+
+Sub TestTo2D()
+    Dim a1D As Variant
+    Dim a2D As Variant
+    Dim i As Long
+
+    a1D = Array(8, 3, 5, 1, 9, 4)
+
+    a2D = To2D(a1D)
+
+    For i = LBound(a2D, 1) To UBound(a2D, 1)
+        Debug.Print a2D(i, 1)
+    Next i
+End Sub
+==================================================================
+</code></pre>
+
+<h4>フラグ（Flag）による高速終了</h4>
+<pre><code>
+==================================================================
+Dim found As Boolean
+found = False
+
+For i = 1 To 1000
+    If arr(i) = target Then
+        found = True
+        Exit For
+    End If
+Next i
+
+If found Then
+    Debug.Print "見つかった"
+End If
+'ネストが深い処理でも「見つかったら即終了」できる
+'
+'条件分岐が減って読みやすい
+'
+'実務で最も使われる高速化テクニック
+==================================================================
+</code></pre>
+
+<h4>ガード節（Guard Clause）</h4>
+<pre><code>
+==================================================================
+If rng Is Nothing Then Exit Function
+If rng.Rows.Count = 0 Then Exit Function
+If Len(target) = 0 Then Exit Function
+
+' 正常系の処理だけが残る
+
+’ネストが浅くなり読みやすい
+
+’エラーを早期に排除できる
+
+’実務コードが劇的に綺麗になる
+==================================================================
+</code></pre>
+
+<h4>事前計算（Precomputation）</h4>
+<pre><code>
+==================================================================
+Dim lastRow As Long
+lastRow = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row
+
+For i = 1 To lastRow
+    ' lastRow を毎回計算しない
+Next i
+
+'ループ内の処理が軽くなる
+'
+'大量データで高速化が顕著
+'
+'Excel VBAでは特に効果が大きい
+==================================================================
+</code></pre>
+
+
 </body>
 </html>
 
