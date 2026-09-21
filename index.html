@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="google-site-verification" content="NDruP4quhsgKEZOlA5ozHhUY4zP8Adntrtye9_r2QU8">
-  <title>Excel VBAコード集｜実務で使えるサンプル</title>
+  <title>Excel VBAコード集</title>
   <meta name="description" content="Excel VBAの実務で使えるコードのサンプルを掲載しています。">
 </head>
   
 <body>
 
-<h1>Excel VBAコード集（実務向け）</h1>
+<h1>Excel VBAコード集</h1>
 <p>
 このページでは、Excel VBAの実務で役立つコードを掲載しています。  
 コードの使用に際して損害が発生しても一切責任は負いません。
@@ -18,8 +18,84 @@
 <!--
  (=^・^=)
 -->
+<style>
+.tabs {
+  margin-top: 20px;
+}
 
+.tab-menu {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  border-bottom: 2px solid #ccc;
+}
 
+.tab-menu li {
+  padding: 10px 20px;
+  cursor: pointer;
+  border: 1px solid #ccc;
+  border-bottom: none;
+  background: #f5f5f5;
+  margin-right: 5px;
+}
+
+.tab-menu li.active {
+  background: white;
+  font-weight: bold;
+}
+
+.tab-content {
+  display: none;
+  padding: 20px;
+  border: 1px solid #ccc;
+}
+
+.tab-content.active {
+  display: block;
+}
+</style>
+
+<!--
+ (=^・^=)
+-->
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+  const tabs = document.querySelectorAll(".tab-menu li");
+  const contents = document.querySelectorAll(".tab-content");
+
+  tabs.forEach(tab => {
+    tab.addEventListener("click", () => {
+      // タブの active 切り替え
+      tabs.forEach(t => t.classList.remove("active"));
+      tab.classList.add("active");
+
+      // コンテンツの active 切り替え
+      contents.forEach(c => c.classList.remove("active"));
+      document.getElementById(tab.dataset.tab).classList.add("active");
+    });
+  });
+});
+</script>
+
+<!--
+ (=^・^=)
+-->
+
+<div class="tabs">
+  <ul class="tab-menu">
+    <li class="active" data-tab="tab-delete">行削除系</li>
+    <li data-tab="tab-check">事前チェック</li>
+    <li data-tab="tab-array">配列操作</li>
+    <li data-tab="tab-sort">検索</li>
+    <li data-tab="tab-dictionary">辞書操作</li>
+    <li data-tab="tab-file">ファイル操作</li>
+    <li data-tab="tab-sort">ソート</li>
+    <li data-tab="tab-other">その他</li>
+  </ul>
+
+  <div class="tab-content active" id="tab-delete">
+    <!-- ここに行削除系のコードを貼る -->
 <h4>targetの値の行を削除して削除した行数を返す</h4>
 <pre><code>
 ==================================================================
@@ -93,31 +169,37 @@ End Function
 ==================================================================
 </code></pre>
 
-<h4>デフォルトボタン指定メッセージ表示</h4>
+  </div>
+
+  <div class="tab-content" id="tab-check">
+    <!-- ここに事前チェック系のコードを貼る -->
+
+<h4>ブックを開いているか調べる</h4>
 <pre><code>
 ==================================================================
-    If MsgBox("本当に削除しますか？", vbYesNo + vbQuestion + vbDefaultButton2, "確認") = vbYes Then
-    	MsgBox "削除しました"
-　　Else
-    	MsgBox "キャンセルしました"
-　　End If
+Private Function IsWorkbookLocked(ByVal filePath As String) As Boolean
+    'ブックが開ひらかれているか調べる
+    Dim fileNum As Integer
+
+    On Error GoTo Locked
+
+    fileNum = FreeFile
+
+    ' 追記モード（書き込みロック）で開けるか試す
+    Open filePath For Binary Access Write Lock Read Write As #fileNum
+
+    ' 開けた → ロックされていない
+    Close #fileNum
+    IsWorkbookLocked = False
+    Exit Function
+
+Locked:
+    ' 開けない → 誰かが開いている（編集中）
+    IsWorkbookLocked = True
+End Function
 ==================================================================
 </code></pre>
 
-
-<h4>開いているブックを閉じる</h4>
-<pre><code>
-==================================================================
-If Not wb Is Nothing Then
-    On Error Resume Next
-    wb.Close SaveChanges:=False
-
-    ' 参照を確実に消す
-    Set wb = Nothing
-    On Error GoTo 0
-End If
-==================================================================
-</code></pre>
 
 
 <h4>問題ありなしを調べてTrueFalseを返すが、ByRefでメッセージを変える</h4>
@@ -153,6 +235,140 @@ End Sub
 </code></pre>
 
 
+  </div>
+
+  <div class="tab-content" id="tab-array">
+    <!-- ここに配列操作系のコードを貼る -->
+
+<h4>配列の指定した列を指定したシートの指定した列に一括で転記する</h4>
+<pre><code>
+==================================================================
+Private Sub CopyArrayColumnFast(ByVal arr As Variant, ByVal arrCol As Long, ByVal ws As Worksheet, ByVal wsCol As Long)
+    '配列の指定した列を指定したシートの指定した列に一括で転記する
+    Dim r As Long
+    Dim lastRow As Long
+    Dim outArr() As Variant
+
+    lastRow = UBound(arr, 1)
+    ReDim outArr(1 To lastRow, 1 To 1)
+
+    For r = 1 To lastRow
+        outArr(r, 1) = arr(r, arrCol)
+    Next r
+
+    ws.Range(ws.Cells(1, wsCol), ws.Cells(lastRow, wsCol)).value = outArr
+End Sub
+
+
+Sub TestCopy()
+    Dim v As Variant
+    v = Sheet1.Range("A1:C10").value
+
+    'vの2列目をSheet2の3列目へ転記
+    CopyArrayColumnFast arr:=v, arrCol:=2, ws:=Sheet2, wsCol:=3
+End Sub
+==================================================================
+</code></pre>
+
+
+<h4>1列の二次元配列 arr(row,1) を一次元配列 arr(row) に変換する</h4>
+<pre><code>
+==================================================================
+Private Function To1D(ByVal arr2D As Variant) As Variant
+    '1列の二次元配列 arr(row,1) を一次元配列 arr(row) に変換する
+    Dim result() As Variant
+    Dim i As Long
+    Dim lastRow As Long
+
+    lastRow = UBound(arr2D, 1)
+
+    ReDim result(1 To lastRow)
+
+    For i = 1 To lastRow
+        result(i) = arr2D(i, 1)
+    Next i
+
+    To1D = result
+End Function
+
+Sub TestTo1D()
+    Dim v As Variant
+    Dim a As Variant
+
+    'Range → 二次元配列
+    v = Range("A1:A6").value
+
+    '一次元配列に変換
+    a = To1D(v)
+
+    Dim i As Long
+    For i = LBound(a) To UBound(a)
+        Debug.Print a(i)
+    Next i
+End Sub
+==================================================================
+</code></pre>
+
+<h4>一次元配列 arr(i) を二次元配列 arr(i,1) に変換する</h4>
+<pre><code>
+==================================================================
+Private Function To2D(ByVal arr1D As Variant) As Variant
+    '一次元配列 arr(i) を二次元配列 arr(i,1) に変換する
+    Dim result() As Variant
+    Dim i As Long
+    Dim lastRow As Long
+
+    lastRow = UBound(arr1D)
+
+    ReDim result(1 To lastRow, 1 To 1)
+
+    For i = 1 To lastRow
+        result(i, 1) = arr1D(i)
+    Next i
+
+    To2D = result
+End Function
+
+Sub TestTo2D()
+    Dim a1D As Variant
+    Dim a2D As Variant
+    Dim i As Long
+
+    a1D = Array(8, 3, 5, 1, 9, 4)
+
+    a2D = To2D(a1D)
+
+    For i = LBound(a2D, 1) To UBound(a2D, 1)
+        Debug.Print a2D(i, 1)
+    Next i
+End Sub
+==================================================================
+</code></pre>
+
+<h4>targetが存在する位置を取得する線形探索</h4>
+<pre><code>
+==================================================================
+Private Function LinearSearch(ByVal arr As Variant, ByVal target As Variant) As Long
+    'targetが存在する位置を取得する
+    Dim i As Long
+    For i = LBound(arr, 1) To UBound(arr, 1)
+        If arr(i, 1) = target Then
+            LinearSearch = i
+            Exit Function
+        End If
+    Next i
+    LinearSearch = -1
+End Function
+
+Sub aaa()
+    Dim v As Variant
+    v = Sheet1.Range(Sheet1.Cells(1, 1), Sheet1.Cells(100, 1)).value
+    Debug.Print LinearSearch(v, "abc")
+End Sub
+==================================================================
+</code></pre>
+
+
 <h4>コレクションを配列に変換する</h4>
 <pre><code>
 ==================================================================
@@ -170,211 +386,6 @@ Private Function CollectionToArray(ByVal collection As collection, ByVal startIn
     Next i
 
     CollectionToArray = arr
-End Function
-==================================================================
-</code></pre>
-
-<h4>ブックを開いているか調べる</h4>
-<pre><code>
-==================================================================
-Private Function IsWorkbookLocked(ByVal filePath As String) As Boolean
-    'ブックが開ひらかれているか調べる
-    Dim fileNum As Integer
-
-    On Error GoTo Locked
-
-    fileNum = FreeFile
-
-    ' 追記モード（書き込みロック）で開けるか試す
-    Open filePath For Binary Access Write Lock Read Write As #fileNum
-
-    ' 開けた → ロックされていない
-    Close #fileNum
-    IsWorkbookLocked = False
-    Exit Function
-
-Locked:
-    ' 開けない → 誰かが開いている（編集中）
-    IsWorkbookLocked = True
-End Function
-==================================================================
-</code></pre>
-
-<h4>最終行を取得</h4>
-<pre><code>
-==================================================================
-Private Function GetLastRow(ByVal ws As Worksheet) As Long
-    '最終行を取得
-    Dim lastRow As Long
-    Dim col_i As Long
-    Dim r As Long
-
-    lastRow = 0
-
-    ' 実務で使う範囲だけ（1～100列）
-    For col_i = 1 To 100
-        r = ws.Cells(ws.Rows.Count, col_i).End(xlUp).Row
-        If r > lastRow Then lastRow = r
-    Next col_i
-
-    GetLastRow = lastRow
-End Function
-==================================================================
-</code></pre>
-
-<h4>最終列を取得</h4>
-<pre><code>
-==================================================================
-Private Function GetLastColumn(ByVal ws As Worksheet) As Long
-    '最終列を取得
-    Dim lastCol As Long
-    Dim row_i As Long
-    Dim c As Long
-
-    lastCol = 0
-
-    ' 実務で使う範囲だけ（1～100行など）
-    For row_i = 1 To 100
-        c = ws.Cells(row_i, ws.Columns.Count).End(xlToLeft).Column
-        If c > lastCol Then lastCol = c
-    Next row_i
-
-    GetLastColumn = lastCol
-End Function
-==================================================================
-</code></pre>
-
-<h4>重複があるか</h4>
-<pre><code>
-==================================================================
-Private Function HasDuplicate(ByVal ws As Worksheet, ByVal checkColumn As Integer) As Boolean
-    '重複があるか調べる
-    Dim dic As Object
-    Dim v As Variant
-    Dim i As Long
-    Dim lastRow As Long
-    
-    HasDuplicate = False
-
-    Set dic = CreateObject("Scripting.Dictionary")
-    
-    lastRow = ws.Cells(ws.Rows.Count, checkColumn).End(xlUp).Row
-    v = ws.Range(ws.Cells(1, checkColumn), ws.Cells(lastRow, checkColumn)).value
-
-    For i = 1 To UBound(v)
-        If dic.Exists(v(i, 1)) Then
-            HasDuplicate = True
-            Exit Function
-        Else
-            dic.Add v(i, 1), i
-        End If
-    Next i
-    
-End Function
-==================================================================
-</code></pre>
-
-<h4>３列すべての値が重複しているか</h4>
-<pre><code>
-==================================================================
-Private Function HasDuplicate(ByVal ws As Worksheet, ByVal checkColumn1 As Integer, ByVal checkColumn2 As Integer, ByVal checkColumn3 As Integer) As Boolean
-    '重複があるか調べる
-    Dim dic As Object
-    Dim v As Variant
-    Dim i As Long
-    Dim lastRow As Long
-    Dim maxColumn As Long
-    Dim minColumn As Long
-    Dim key As String
-    
-    HasDuplicate = False
-
-    Set dic = CreateObject("Scripting.Dictionary")
-    
-    lastRow = ws.Cells(ws.Rows.Count, checkColumn1).End(xlUp).Row
-    maxColumn = WorksheetFunction.Max(checkColumn1, checkColumn2, checkColumn3)
-    minColumn = WorksheetFunction.Min(checkColumn1, checkColumn2, checkColumn3)
-    
-    v = ws.Range(ws.Cells(1, minColumn), ws.Cells(lastRow, maxColumn)).value
-
-    For i = 1 To UBound(v)
-        key = CStr(v(i, checkColumn1)) & "|" & CStr(v(i, checkColumn2)) & "|" & CStr(v(i, checkColumn3))
-        If dic.Exists(key) Then
-            HasDuplicate = True
-            Exit Function
-        Else
-            dic.Add key, i
-        End If
-    Next i
-    
-End Function
-==================================================================
-</code></pre>
-
-<h4>ファイル名を変更する</h4>
-<pre><code>
-==================================================================
-Private Function RenameFile(ByVal folderPath As String, ByVal oldName As String, ByVal newName As String) As Boolean
-    'ファイル名を変更する
-    
-    Dim oldPath As String
-    Dim newPath As String
-    
-    RenameFile = False  '失敗を初期値にする
-    
-    ' フルパスを作成
-    oldPath = folderPath & "\" & oldName
-    newPath = folderPath & "\" & newName
-    
-    ' 元ファイルが存在するか確認
-    If Dir(oldPath) = "" Then
-        Exit Function   '存在しない → False のまま終了
-    End If
-    
-    ' 変更後ファイル名が既に存在する場合は失敗扱い
-    If Dir(newPath) <> "" Then
-        Exit Function
-    End If
-    
-    ' ファイル名変更
-    Name oldPath As newPath
-    
-    RenameFile = True   '成功
-End Function
-==================================================================
-</code></pre>
-
-<h4>Midでエラーが出ないようにする</h4>
-<pre><code>
-==================================================================
-Private Function SafeMid(ByVal txt As Variant, _
-                        ByVal startPos As Long, _
-                        ByVal length As Long) As String
-    ' WorksheetFunction.Mid の代わりに使う安全版
-    
-    ' 空・Null・非文字列なら空文字を返す
-    If IsNull(txt) Or IsEmpty(txt) Then
-        SafeMid = ""
-        Exit Function
-    End If
-    
-    Dim s As String
-    s = CStr(txt)
-    
-    ' 開始位置が不正なら空文字
-    If startPos < 1 Or startPos > Len(s) Then
-        SafeMid = ""
-        Exit Function
-    End If
-    
-    ' 長さが不正なら空文字
-    If length < 1 Then
-        SafeMid = ""
-        Exit Function
-    End If
-    
-    ' 安全に Mid を返す
-    SafeMid = Mid$(s, startPos, length)
 End Function
 ==================================================================
 </code></pre>
@@ -596,45 +607,86 @@ End Function
 ==================================================================
 </code></pre>
 
-<h4>事前チェックをまとめる</h4>
+
+  </div>
+
+<div class="tab-content" id="tab-dictionary">
+    <!-- ここに検索系のコードを貼る -->
+
+<h4>３つとも値が合致するセルがあるか調べてRangeを返す</h4>
 <pre><code>
 ==================================================================
-Private Function CheckBeforeProcess(ByVal wb As Workbook, ByRef msg As String) As Boolean
-    msg = ""
+Private Function FindWithBelowRightMatch(ByVal ws As Worksheet, ByVal target1 As String, ByVal target2 As String, ByVal target3 As String) As Range
+    '３つのセルの値が合っていればtarget1の値があった、Rangeを返す
+    
+    Dim rng As Range
+    Dim below As Range
+    Dim right As Range
+    Dim firstAddress As String
 
-    If IsWorkbookLocked(wb) Then
-        msg = msg & "ブックが誰かに開かれています。" & vbCrLf
+    ' target1 を検索
+    Set rng = ws.Cells.Find(What:=target1, _
+                            LookIn:=xlValues, _
+                            LookAt:=xlWhole, _
+                            SearchOrder:=xlByRows, _
+                            SearchDirection:=xlNext, _
+                            MatchCase:=False)
+
+    ' 見つからなければ Nothing
+    If rng Is Nothing Then
+        Set FindWithBelowRightMatch = Nothing
+        Exit Function
     End If
 
-    ' ここにチェックをいくらでも追加できる
-'    If IsSheetNameInvalid(wb) Then
-'        msg = msg & "シート名が不正です。" & vbCrLf
-'    End If
-'
-'    If IsDataRangeInvalid(wb) Then
-'        msg = msg & "データ範囲が不正です。" & vbCrLf
-'    End If
+    firstAddress = rng.Address
 
-    ' If IsSomethingWrong(wb) Then msg = msg & "～～が不正です" & vbCrLf
+    Do
+        ' 下のセルがシート範囲内か確認
+        If rng.Row < ws.Rows.Count Then
+            Set below = rng.Offset(1, 0)
+        Else
+            Set below = Nothing
+        End If
 
-    CheckBeforeProcess = (msg <> "")
+        ' 右のセルがシート範囲内か確認
+        If rng.column < ws.Columns.Count Then
+            Set right = rng.Offset(0, 1)
+        Else
+            Set right = Nothing
+        End If
+
+        ' 3つすべて一致したら返す
+        If Not below Is Nothing And Not right Is Nothing Then
+            If below.Value = target2 And right.Value = target3 Then
+                Set FindWithBelowRightMatch = rng
+                Exit Function
+            End If
+        End If
+
+        ' 次の検索へ
+        Set rng = ws.Cells.FindNext(rng)
+        
+        '検索がヒットしなかったら終了
+        If rng Is Nothing Then Exit Do
+        
+        '最後まで検索してすべて合致しなかったら終了
+        If rng.Address = firstAddress Then Exit Do
+        
+    Loop
+
+    ' 見つからなければ Nothing
+    Set FindWithBelowRightMatch = Nothing
+    
 End Function
 
-Sub ExecuteProcess()
-
-    Dim message As String
-
-    If CheckBeforeProcess(wb, message) Then
-        MsgBox message & vbCrLf & "事前チェックで問題が見つかりました。処理を終了します。"
-        Exit Sub
-    End If
-
-    ' ---- 転記処理 ----
-'    Call CopyData
-
-End Sub
 ==================================================================
 </code></pre>
+
+  </div>
+
+
+  <div class="tab-content" id="tab-dictionary">
+    <!-- ここに辞書操作系のコードを貼る -->
 
 <h4>辞書で値があるか調べる</h4>
 <pre><code>
@@ -658,28 +710,168 @@ End Function
 ==================================================================
 </code></pre>
 
-<h4>targetが存在する位置を取得する線形探索</h4>
+<h4>重複があるか</h4>
 <pre><code>
 ==================================================================
-Private Function LinearSearch(ByVal arr As Variant, ByVal target As Variant) As Long
-    'targetが存在する位置を取得する
+Private Function HasDuplicate(ByVal ws As Worksheet, ByVal checkColumn As Integer) As Boolean
+    '重複があるか調べる
+    Dim dic As Object
+    Dim v As Variant
     Dim i As Long
-    For i = LBound(arr, 1) To UBound(arr, 1)
-        If arr(i, 1) = target Then
-            LinearSearch = i
+    Dim lastRow As Long
+    
+    HasDuplicate = False
+
+    Set dic = CreateObject("Scripting.Dictionary")
+    
+    lastRow = ws.Cells(ws.Rows.Count, checkColumn).End(xlUp).Row
+    v = ws.Range(ws.Cells(1, checkColumn), ws.Cells(lastRow, checkColumn)).value
+
+    For i = 1 To UBound(v)
+        If dic.Exists(v(i, 1)) Then
+            HasDuplicate = True
             Exit Function
+        Else
+            dic.Add v(i, 1), i
         End If
     Next i
-    LinearSearch = -1
+    
 End Function
+==================================================================
+</code></pre>
+
+<h4>３列すべての値が重複しているか</h4>
+<pre><code>
+==================================================================
+Private Function HasDuplicate(ByVal ws As Worksheet, ByVal checkColumn1 As Integer, ByVal checkColumn2 As Integer, ByVal checkColumn3 As Integer) As Boolean
+    '重複があるか調べる
+    Dim dic As Object
+    Dim v As Variant
+    Dim i As Long
+    Dim lastRow As Long
+    Dim maxColumn As Long
+    Dim minColumn As Long
+    Dim key As String
+    
+    HasDuplicate = False
+
+    Set dic = CreateObject("Scripting.Dictionary")
+    
+    lastRow = ws.Cells(ws.Rows.Count, checkColumn1).End(xlUp).Row
+    maxColumn = WorksheetFunction.Max(checkColumn1, checkColumn2, checkColumn3)
+    minColumn = WorksheetFunction.Min(checkColumn1, checkColumn2, checkColumn3)
+    
+    v = ws.Range(ws.Cells(1, minColumn), ws.Cells(lastRow, maxColumn)).value
+
+    For i = 1 To UBound(v)
+        key = CStr(v(i, checkColumn1)) & "|" & CStr(v(i, checkColumn2)) & "|" & CStr(v(i, checkColumn3))
+        If dic.Exists(key) Then
+            HasDuplicate = True
+            Exit Function
+        Else
+            dic.Add key, i
+        End If
+    Next i
+    
+End Function
+==================================================================
+</code></pre>
+
+
+  </div>
+
+  <div class="tab-content" id="tab-file">
+    <!-- ここにファイル操作系のコードを貼る -->
+
+<h4>ファイル名を変更する</h4>
+<pre><code>
+==================================================================
+Private Function RenameFile(ByVal folderPath As String, ByVal oldName As String, ByVal newName As String) As Boolean
+    'ファイル名を変更する
+    
+    Dim oldPath As String
+    Dim newPath As String
+    
+    RenameFile = False  '失敗を初期値にする
+    
+    ' フルパスを作成
+    oldPath = folderPath & "\" & oldName
+    newPath = folderPath & "\" & newName
+    
+    ' 元ファイルが存在するか確認
+    If Dir(oldPath) = "" Then
+        Exit Function   '存在しない → False のまま終了
+    End If
+    
+    ' 変更後ファイル名が既に存在する場合は失敗扱い
+    If Dir(newPath) <> "" Then
+        Exit Function
+    End If
+    
+    ' ファイル名変更
+    Name oldPath As newPath
+    
+    RenameFile = True   '成功
+End Function
+==================================================================
+</code></pre>
+
+<h4>フォルダを作成</h4>
+<pre><code>
+==================================================================
+Private Sub MakeFolder(ByVal folderPath As String)
+    ' --- フォルダが存在するかチェックし、存在しなければフォルダを作成 ---
+    If Dir(folderPath, vbDirectory) = "" Then
+        MkDir folderPath
+    End If
+End Sub
+
 
 Sub aaa()
-    Dim v As Variant
-    v = Sheet1.Range(Sheet1.Cells(1, 1), Sheet1.Cells(100, 1)).value
-    Debug.Print LinearSearch(v, "abc")
+
+MakeFolder ThisWorkbook.Path & "\" & "今回作成するフォルダ"
+
 End Sub
 ==================================================================
 </code></pre>
+
+
+  </div>
+
+  <div class="tab-content" id="tab-sort">
+    <!-- ここにソート系のコードを貼る -->
+
+<h4>シートの指定した列の値を並べ替える</h4>
+<pre><code>
+==================================================================
+Private Sub SortSheetABC( _
+        ByVal ws As Worksheet, _
+        ByVal column1 As Long, ByVal order1 As XlSortOrder, _
+        ByVal column2 As Long, ByVal order2 As XlSortOrder, _
+        ByVal column3 As Long, ByVal order3 As XlSortOrder)
+　　'シートの指定した列の値を並べ替える
+    Dim rng As Range
+
+    '並べ替え対象範囲（A1 から連続した範囲）
+    Set rng = ws.Range("A1").CurrentRegion
+
+    rng.Sort _
+        Key1:=ws.Columns(column1), Order1:=order1, _
+        Key2:=ws.Columns(column2), Order2:=order2, _
+        Key3:=ws.Columns(column3), Order3:=order3, _
+        Header:=xlYes
+End Sub
+
+Private Sub TestSort()
+    SortSheetABC Sheet1, _
+                 column1:=1, order1:=xlAscending, _
+                 column2:=2, order2:=xlAscending, _
+                 column3:=3, order3:=xlDescending
+End Sub
+
+==================================================================
+</code></pre>
+
 
 <h4>シートをソートする</h4>
 <pre><code>
@@ -806,76 +998,298 @@ End Sub
 ==================================================================
 </code></pre>
 
-<h4>1列の二次元配列 arr(row,1) を一次元配列 arr(row) に変換する</h4>
+
+  </div>
+
+  <div class="tab-content" id="tab-other">
+    <!-- ここにその他のコードを貼る -->
+
+<h4>デフォルトボタン指定メッセージ表示</h4>
 <pre><code>
 ==================================================================
-Private Function To1D(ByVal arr2D As Variant) As Variant
-    '1列の二次元配列 arr(row,1) を一次元配列 arr(row) に変換する
-    Dim result() As Variant
-    Dim i As Long
+    If MsgBox("本当に削除しますか？", vbYesNo + vbQuestion + vbDefaultButton2, "確認") = vbYes Then
+    	MsgBox "削除しました"
+　　Else
+    	MsgBox "キャンセルしました"
+　　End If
+==================================================================
+</code></pre>
+
+
+<h4>開いているブックを閉じる</h4>
+<pre><code>
+==================================================================
+If Not wb Is Nothing Then
+    On Error Resume Next
+    wb.Close SaveChanges:=False
+
+    ' 参照を確実に消す
+    Set wb = Nothing
+    On Error GoTo 0
+End If
+==================================================================
+</code></pre>
+
+
+<h4>最終行を取得</h4>
+<pre><code>
+==================================================================
+Private Function GetLastRow(ByVal ws As Worksheet) As Long
+    '最終行を取得
     Dim lastRow As Long
+    Dim col_i As Long
+    Dim r As Long
 
-    lastRow = UBound(arr2D, 1)
+    lastRow = 0
 
-    ReDim result(1 To lastRow)
+    ' 実務で使う範囲だけ（1～100列）
+    For col_i = 1 To 100
+        r = ws.Cells(ws.Rows.Count, col_i).End(xlUp).Row
+        If r > lastRow Then lastRow = r
+    Next col_i
 
-    For i = 1 To lastRow
-        result(i) = arr2D(i, 1)
-    Next i
+    GetLastRow = lastRow
+End Function
+==================================================================
+</code></pre>
 
-    To1D = result
+<h4>最終列を取得</h4>
+<pre><code>
+==================================================================
+Private Function GetLastColumn(ByVal ws As Worksheet) As Long
+    '最終列を取得
+    Dim lastCol As Long
+    Dim row_i As Long
+    Dim c As Long
+
+    lastCol = 0
+
+    ' 実務で使う範囲だけ（1～100行など）
+    For row_i = 1 To 100
+        c = ws.Cells(row_i, ws.Columns.Count).End(xlToLeft).Column
+        If c > lastCol Then lastCol = c
+    Next row_i
+
+    GetLastColumn = lastCol
+End Function
+==================================================================
+</code></pre>
+
+<h4>Midでエラーが出ないようにする</h4>
+<pre><code>
+==================================================================
+Private Function SafeMid(ByVal txt As Variant, _
+                        ByVal startPos As Long, _
+                        ByVal length As Long) As String
+    ' WorksheetFunction.Mid の代わりに使う安全版
+    
+    ' 空・Null・非文字列なら空文字を返す
+    If IsNull(txt) Or IsEmpty(txt) Then
+        SafeMid = ""
+        Exit Function
+    End If
+    
+    Dim s As String
+    s = CStr(txt)
+    
+    ' 開始位置が不正なら空文字
+    If startPos < 1 Or startPos > Len(s) Then
+        SafeMid = ""
+        Exit Function
+    End If
+    
+    ' 長さが不正なら空文字
+    If length < 1 Then
+        SafeMid = ""
+        Exit Function
+    End If
+    
+    ' 安全に Mid を返す
+    SafeMid = Mid$(s, startPos, length)
+End Function
+==================================================================
+</code></pre>
+
+<h4>事前チェックをまとめる</h4>
+<pre><code>
+==================================================================
+Private Function CheckBeforeProcess(ByVal wb As Workbook, ByRef msg As String) As Boolean
+    msg = ""
+
+    If IsWorkbookLocked(wb) Then
+        msg = msg & "ブックが誰かに開かれています。" & vbCrLf
+    End If
+
+    ' ここにチェックをいくらでも追加できる
+'    If IsSheetNameInvalid(wb) Then
+'        msg = msg & "シート名が不正です。" & vbCrLf
+'    End If
+'
+'    If IsDataRangeInvalid(wb) Then
+'        msg = msg & "データ範囲が不正です。" & vbCrLf
+'    End If
+
+    ' If IsSomethingWrong(wb) Then msg = msg & "～～が不正です" & vbCrLf
+
+    CheckBeforeProcess = (msg <> "")
 End Function
 
-Sub TestTo1D()
-    Dim v As Variant
-    Dim a As Variant
+Sub ExecuteProcess()
 
-    'Range → 二次元配列
-    v = Range("A1:A6").value
+    Dim message As String
 
-    '一次元配列に変換
-    a = To1D(v)
+    If CheckBeforeProcess(wb, message) Then
+        MsgBox message & vbCrLf & "事前チェックで問題が見つかりました。処理を終了します。"
+        Exit Sub
+    End If
 
-    Dim i As Long
-    For i = LBound(a) To UBound(a)
-        Debug.Print a(i)
-    Next i
+    ' ---- 転記処理 ----
+'    Call CopyData
+
 End Sub
 ==================================================================
 </code></pre>
 
-<h4>一次元配列 arr(i) を二次元配列 arr(i,1) に変換する</h4>
+
+<h4>すべてのシートでA1セルをアクティブにし、ズーム倍率を統一する</h4>
 <pre><code>
 ==================================================================
-Private Function To2D(ByVal arr1D As Variant) As Variant
-    '一次元配列 arr(i) を二次元配列 arr(i,1) に変換する
-    Dim result() As Variant
-    Dim i As Long
-    Dim lastRow As Long
+Private Sub ActivateAllSheetsA1(ByVal wb As Workbook, ByVal zoomPercent As Long)
+    'すべてのシートでA1セルをアクティブにし、ズーム倍率を統一する
+    Dim ws As Worksheet
+    Dim currentSheet As Worksheet
 
-    lastRow = UBound(arr1D)
+    '今表示しているシートを記録
+    Set currentSheet = wb.ActiveSheet
 
-    ReDim result(1 To lastRow, 1 To 1)
+    '全シートのA1をアクティブにし、ズームを統一
+    For Each ws In wb.Worksheets
+        ws.Activate
+        ws.Range("A1").Select
+        ws.Parent.Windows(1).Zoom = zoomPercent
+    Next ws
 
-    For i = 1 To lastRow
-        result(i, 1) = arr1D(i)
-    Next i
+    '元のシートを再表示
+    currentSheet.Activate
+End Sub
 
-    To2D = result
+
+Sub aaa()
+ActivateAllSheetsA1 Workbooks("審査会予定一覧用.xlsx"), 100
+End Sub
+==================================================================
+</code></pre>
+
+<h4>値を検索してRangeを取得する</h4>
+<pre><code>
+==================================================================
+Private Function FindTextRange(ByVal ws As Worksheet, ByVal target As String) As Range
+    '値を検索してRangeを取得する
+    Dim rng As Range
+
+    'Find は設定が残るので必ず引数をすべて指定する
+    Set rng = ws.Cells.Find(What:=target, LookIn:=xlValues, LookAt:=xlPart, SearchOrder:=xlByRows, SearchDirection:=xlNext, MatchCase:=False)
+    '検索する文字列
+    '値を検索（数式ではなく表示値）
+    '部分一致（完全一致なら xlWhole）
+    '行方向に検索
+    '次のセルへ進む
+    '大文字小文字を区別しない
+    
+    If rng Is Nothing Then
+        Set FindTextRange = Nothing   '見つからなかった場合
+    Else
+        Set FindTextRange = rng       '見つかったセルを返す
+    End If
 End Function
 
-Sub TestTo2D()
-    Dim a1D As Variant
-    Dim a2D As Variant
+Private Sub TestFind()
+    Dim result As Range
+
+    Set result = FindTextRange(Sheet1, "検索文字")
+
+    If result Is Nothing Then
+        MsgBox "見つかりませんでした"
+    Else
+        MsgBox "見つかったセル: " & result.Address
+        result.Select
+    End If
+End Sub
+==================================================================
+</code></pre>
+
+<h4>シートの書式だけコピー</h4>
+<pre><code>
+==================================================================
+Private Sub CopyFormatsFromAAA(ByVal sourceSheet As Worksheet, ByVal targetSheets As Variant)
+    'sourceSheetの書式だけtargetSheetsにコピー
+    Dim wb As Workbook
+    Dim ws As Worksheet
     Dim i As Long
 
-    a1D = Array(8, 3, 5, 1, 9, 4)
+    Set wb = ThisWorkbook
 
-    a2D = To2D(a1D)
+    For i = LBound(targetSheets) To UBound(targetSheets)
+        Set ws = targetSheets(i)
 
-    For i = LBound(a2D, 1) To UBound(a2D, 1)
-        Debug.Print a2D(i, 1)
+        '書式だけコピー（高速）
+        sourceSheet.UsedRange.Copy
+        ws.UsedRange.PasteSpecial xlPasteFormats
+
+        '列幅もコピー
+        ws.Columns.ColumnWidth = sourceSheet.Columns.ColumnWidth
     Next i
+
+    Application.CutCopyMode = False
+End Sub
+==================================================================
+</code></pre>
+<h4>高速化のクラスにより、途中で処理を抜けても、高速化解除できる</h4>
+<pre><code>
+==================================================================
+' ============================
+' AutoSpeedMode.cls
+' ============================
+
+
+Private Sub Class_Initialize()
+
+    ' 高速化 ON
+    With Application
+        .ScreenUpdating = False
+        .EnableEvents = False
+        .Calculation = xlCalculationManual
+    End With
+
+End Sub
+
+Private Sub Class_Terminate()
+
+    ' 高速化 OFF
+    With Application
+        .ScreenUpdating = True
+        .EnableEvents = True
+        .Calculation = xlCalculationAutomatic
+    End With
+    
+End Sub
+
+
+' ============================
+' Module1
+' ============================
+Sub aaa()
+
+    Dim spd As AutoSpeedMode: Set spd = New AutoSpeedMode ' ← 高速化ON（自動）
+    Dim val As Variant
+
+    val = Range("A2").value
+
+    If IsEmpty(val) Then
+        MsgBox "空白です。処理を終了します"
+        Exit Sub   ' ← ここで抜けても高速化は自動でOFFに戻る
+    End If
+
 End Sub
 ==================================================================
 </code></pre>
@@ -939,6 +1353,11 @@ Next i
 ==================================================================
 </code></pre>
 
+
+
+
+  </div>
+</div>
 
 </body>
 </html>
